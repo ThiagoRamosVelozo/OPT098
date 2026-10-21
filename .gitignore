@@ -71,7 +71,9 @@ references/
 *.sublime-project
 *.sublime-workspace
 
-# Operating System files
+# Operating System and Editor extensions
 .DS_Store
 Thumbs.db
 desktop.ini
+.markdown-collab/
+
