@@ -1,0 +1,1 @@
+w/ 3-100Hz bandpass filtering (eegfilt), downsampled to 250 Hz

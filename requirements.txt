@@ -1,0 +1,18 @@
+# Core Deep Learning and Scientific Computing
+torch
+numpy
+scipy
+mne
+
+# Data Manipulation & Visualization
+pandas
+matplotlib
+seaborn
+
+# Machine Learning & Evaluation
+scikit-learn
+
+# Utilities & Configuration
+pyyaml
+tqdm
+requests
