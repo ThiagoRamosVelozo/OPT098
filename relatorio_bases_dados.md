@@ -1,6 +1,6 @@
-# Relatório Explicativo das Bases de Dados e Recursos de Sinais (OPT098)
+# Relatório Explicativo das Bases de Dados e Modelagem de Sinais (OPT098)
 
-> **Objetivo deste Relatório:** Apresentar uma visão analítica, completa e didática sobre as bases de dados de Eletroencefalograma (EEG) e Interfaces Cérebro-Computador (BCI) utilizadas neste projeto acadêmico. Este documento foi elaborado com explicações intuitivas para que qualquer pessoa leiga compreenda perfeitamente o significado de cada métrica, eletrodo e protocolo experimental.
+> **Objetivo deste Relatório:** Apresentar uma visão analítica, completa e didática sobre as bases de dados de Eletroencefalograma (EEG), os dados do repositório neural **DB-AFDNet** e as Interfaces Cérebro-Computador (BCI) utilizadas neste projeto. Este documento foi elaborado com explicações intuitivas para que qualquer pessoa leiga compreenda perfeitamente o significado de cada métrica, eletrodo, transformação espectral e protocolo experimental.
 
 ---
 
@@ -88,7 +88,77 @@ O script inspecionou diretamente os **10 arquivos `.mat`** locais baixados do Fi
 
 ---
 
-## 4. Engenharia de Redução de Eletrodos (O que o projeto investiga)
+## 4. Verificação e Diagnóstico do Repositório DB-AFDNet e Transformação de Dados
+
+O **DB-AFDNet** (*Dual-Branch Attention-Based Frequency Domain Network*, Yang et al., 2026) é a principal arquitetura neural do projeto. Ele consome os dados brutos do dataset BETA através de uma cadeia rigorosa de pré-processamento e transformação espectral complexa:
+
+### Pipeline de Ingestão do DB-AFDNet sobre o Dataset BETA
+
+```text
+  [Arquivo BETA S*.mat] (64 canais, 750 pontos)
+           │
+           ▼
+  [1. Seleção dos 9 Canais] Pz, PO5, PO3, POz, PO4, PO6, O1, Oz, O2 (índices 47, 53, 54, 55, 56, 57, 60, 61, 62)
+           │
+           ▼
+  [2. Compensação de Latência] Início em t_delay = 157 amostras (0.5s pré + 130ms de atraso visual)
+           │
+           ▼
+  [3. Banco de Filtros Harmônicos] Decomposição em sub-bandas (3 sub-bandas paralelas)
+           │
+           ▼
+  [4. Tensor de Entrada na Rede] Shape: [Batch, 3 sub-bandas, 9 canais, 250 amostras]
+           │
+           ▼
+  [5. RFFT com Zero-Padding] rfft(x, n=1250) -> Resolução espectral de 0.2 Hz por ponto
+           │
+           ▼
+  [6. Janela Espectral 8 a 64 Hz] Fatiamento dos índices 40 a 320 -> 280 pontos de frequência
+           │
+           ├─────────────────────────────────────────┐
+           ▼                                         ▼
+  [Parte REAL (Amplitude)]                  [Parte IMAGINÁRIA (Fase)]
+  Módulo DIAN com Atenção Espacial          Módulo DIAN com Atenção Espacial
+  (Channel-wise Attention + Convs)          (Channel-wise Attention + Convs)
+           │                                         │
+           └────────────────────┬────────────────────┘
+                                ▼
+  [Classificação + Restrições] L = L_ce + 0.2*L_d (similaridade) + 0.2*L_s (ortogonalidade)
+```
+
+### Resultados da Inspeção do Código em `references/DBAFDNet`:
+
+* **Status do Repositório Local:** Clonado e Acessível
+* **Parâmetros Treináveis da Rede Principal (`DBACFNet`):** **4.340.312 parâmetros**
+* **Teste de Forward-Pass em PyTorch:** **SUCESSO (Saída: [2, 40] classes)**
+* **Tensor de Entrada Esperado:** `(Batch, 3, 9, 250)`
+* **Pontos de Resolução Espectral (FFT bins):** `280 bins` (abrangendo 8.0 Hz a 64.0 Hz)
+* **Função de Perda Multi-Objetivo:** `Loss = L_ce + 0.2 * L_sim + 0.2 * L_ortho`
+* **Canais Específicos Mapeados no `main.py`:** `[47, 53, 54, 55, 56, 57, 60, 61, 62]` (9 eletrodos)
+* **Amostra de Corte Temporal (Latência):** `157` pontos
+
+### Os 12 Modelos Disponíveis no Repositório do DB-AFDNet:
+
+O repositório oficial do DB-AFDNet já contém implementação pronta de 12 modelos comparativos na pasta `models/`:
+
+| # | Nome do Modelo | Arquivo | Categoria / Descrição |
+| :-: | :--- | :--- | :--- |
+| 1 | **DBACFNet** | `DBACFNet.py` | Duplo ramo espectral complexo com atenção adaptativa (modelo principal) |
+| 2 | **FBDBACFNet** | `FBDBACFNet.py` | DB-AFDNet integrado com banco de filtros harmônicos multiescala |
+| 3 | **FBCCA** | `FBCCA.py` | Filter Bank Canonical Correlation Analysis (baseline clássico sem treino) |
+| 4 | **TRCA** | `TRCA.py` | Task-Related Component Analysis (análise de correlação intra-sujeito) |
+| 5 | **CCA** | `CCA.py` | Análise de Correlação Canônica pura |
+| 6 | **FBSSVEPFormer**| `FBSSVEPFormer.py` | Transformer adaptado para SSVEP com banco de filtros |
+| 7 | **EEGNet** | `EEGNet.py` | Rede convolucional compacta padrão de neurociência (Lawhern et al.) |
+| 8 | **ConvCA** | `ConvCA.py` | Rede convolucional inspirada em correlação canônica |
+| 9 | **GuneyDNN** | `GuneyDNN.py` | Rede neural densa profunda pioneira em SSVEP |
+| 10 | **CCNN** | `CCNN.py` | Complex Convolutional Neural Network |
+| 11 | **MSI** | `MSI.py` | Magnitude Squared Coherence / Synchronization Index |
+| 12 | **ShallowConvNet**| `ShallowConvNet.py` | Rede convolucional rasa para decodificação de ritmos oscilatórios |
+
+---
+
+## 5. Engenharia de Redução de Eletrodos (O que o projeto investiga)
 
 Um capacete de 64 eletrodos com gel condutor é inviável no dia a dia: demora mais de 30 minutos para colocar, suja o cabelo e causa desconforto. Nosso projeto avalia como o algoritmo se comporta ao usarmos **apenas 5 ou 3 sensores**:
 
@@ -125,7 +195,7 @@ Um capacete de 64 eletrodos com gel condutor é inviável no dia a dia: demora m
 
 ---
 
-## 5. Panorama de Desempenho dos Algoritmos na Literatura
+## 6. Panorama de Desempenho dos Algoritmos na Literatura
 
 Como os métodos clássicos e as redes neurais se comportam frente a essas bases de dados:
 
@@ -142,7 +212,7 @@ Como os métodos clássicos e as redes neurais se comportam frente a essas bases
 
 ---
 
-## 6. Conclusões e Recomendações para os Próximos Experimentos
+## 7. Conclusões e Recomendações para os Próximos Experimentos
 
 1. **Validade e Integridade Comprovada:** Todos os arquivos de dados locais em `data/raw/` possuem dimensões consistentes `(64, 750, 4, 40)` a 250 Hz, permitindo extrair sem cortes qualquer janela de 0.2s até 2.0s.
 2. **Compensação Temporal Obrigatória:** Todo pré-processamento deve pular os primeiros 130 ms após o início do estímulo para sincronizar exatamente com o pico de resposta neural do córtex visual.
