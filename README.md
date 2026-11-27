@@ -17,6 +17,7 @@ OPT098/
 │   ├── raw/                 # Dados brutos do dataset BETA (S*.mat, Description.pdf, etc.)
 │   └── processed/           # Tensores pré-processados e filtrados
 ├── src/
+│   ├── bneurd_beta.py       # Rotinas adaptadas de bneurd/tutoriais para a base BETA
 │   ├── data/                # Ingestão, fatiamento, filtros e seleção espacial
 │   ├── models/              # Arquiteturas (FBCCA baseline, DB-AFDNet, etc.)
 │   └── utils/               # Métricas (ITR, acurácia), gráficos e configurações
@@ -24,11 +25,13 @@ OPT098/
 ├── experiments/
 │   ├── logs/                # Logs de treinamento e validação LOSO
 │   └── results/             # Matrizes de confusão, CSVs e relatórios
-├── notebooks/               # Análise exploratória e visualizações
+├── notebooks/
+│   └── tutoriais_beta/      # 5 notebooks de bneurd/tutoriais adaptados e executados no BETA
 ├── scripts/
-│   ├── verify_env.py        # Validação do ambiente Python e dependências
-│   ├── download_beta.py     # Script de download automatizado do dataset BETA
-│   └── verify_beta_data.py  # Script de validação e integridade dos arquivos .mat
+│   ├── verify_env.py                  # Validação do ambiente Python e dependências
+│   ├── download_beta.py               # Script de download automatizado do dataset BETA
+│   ├── verify_beta_data.py            # Script de validação e integridade dos arquivos .mat
+│   └── build_and_run_tutoriais_beta.py # Constrói e executa os 5 notebooks adaptados do BNEURD
 ├── requirements.txt         # Dependências do projeto (PyTorch, MNE, SciPy, etc.)
 └── .gitignore               # Arquivos ignorados (dados pesados, .venv, modelos)
 ```
